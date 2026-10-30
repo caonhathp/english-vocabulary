@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sổ Tay Từ Vựng</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8 text-slate-800">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Sổ Tay Từ Vựng Tiếng Anh</h1>
+
+    <!-- Form thêm từ -->
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+        <input id="wordInput" type="text" placeholder="Từ tiếng Anh (vd: resilient)" class="border p-2 rounded focus:outline-blue-500">
+        <input id="ipaInput" type="text" placeholder="Phiên âm (/rɪˈzɪl.jənt/)" class="border p-2 rounded focus:outline-blue-500">
+        <input id="meaningInput" type="text" placeholder="Nghĩa tiếng Việt" class="border p-2 rounded focus:outline-blue-500">
+      </div>
+      <div class="flex justify-between items-center">
+        <button onclick="autoFetchIPA()" class="text-xs text-blue-500 hover:underline">Tự lấy phiên âm từ từ điển</button>
+        <button onclick="addWord()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">Thêm từ</button>
+      </div>
+    </div>
+
+    <!-- Danh sách từ -->
+    <div id="wordList" class="space-y-3"></div>
+  </div>
+
+  <script>
+    let words = JSON.parse(localStorage.getItem('my_vocab') || '[]');
+
+    function saveAndRender() {
+      localStorage.setItem('my_vocab', JSON.stringify(words));
+      const list = document.getElementById('wordList');
+      list.innerHTML = '';
+
+      words.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border flex items-center justify-between transition ${
+          item.learned ? 'bg-slate-100 border-slate-300 opacity-60' : 'bg-white border-slate-200 shadow-sm'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-lg ${item.learned ? 'line-through text-slate-500' : 'text-slate-800'}">${item.word}</span>
+              <span class="text-sm text-slate-500 font-mono">${item.ipa || ''}</span>
+              <button onclick="speak('${item.word}')" class="text-blue-500 hover:text-blue-700 p-1">🔊</button>
+            </div>
+            <p class="text-slate-600 mt-1">${item.meaning}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-1 cursor-pointer text-sm text-slate-600">
+              <input type="checkbox" ${item.learned ? 'checked' : ''} onchange="toggleLearned(${index})" class="rounded text-blue-600">
+              Đã thuộc
+            </label>
+            <button onclick="deleteWord(${index})" class="text-red-400 hover:text-red-600 ml-2 text-sm">Xóa</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function autoFetchIPA() {
+      const word = document.getElementById('wordInput').value.trim();
+      if (!word) return;
+      try {
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        const data = await res.json();
+        if (data[0] && data[0].phonetic) {
+          document.getElementById('ipaInput').value = data[0].phonetic;
+        } else if (data[0]?.phonetics?.length) {
+          const p = data[0].phonetics.find(item => item.text);
+          if (p) document.getElementById('ipaInput').value = p.text;
+        }
+      } catch (e) {
+        console.error("Không tìm thấy phiên âm");
+      }
+    }
+
+    function addWord() {
+      const word = document.getElementById('wordInput').value.trim();
+      const ipa = document.getElementById('ipaInput').value.trim();
+      const meaning = document.getElementById('meaningInput').value.trim();
+
+      if (!word) return alert('Vui lòng nhập từ');
+      words.unshift({ word, ipa, meaning, learned: false });
+      document.getElementById('wordInput').value = '';
+      document.getElementById('ipaInput').value = '';
+      document.getElementById('meaningInput').value = '';
+      saveAndRender();
+    }
+
+    function toggleLearned(index) {
+      words[index].learned = !words[index].learned;
+      saveAndRender();
+    }
+
+    function deleteWord(index) {
+      words.splice(index, 1);
+      saveAndRender();
+    }
+
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    }
+
+    saveAndRender();
+  </script>
+</body>
+</html>
