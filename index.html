@@ -31,7 +31,7 @@
           Học 30 từ hôm nay
         </button>
         <button onclick="switchTab('quizTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap flex items-center gap-1.5">
-          Ôn tập từ hôm qua
+          Ôn tập (3 ngày trước)
           <span id="reviewBadge" class="hidden bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
         </button>
         <button onclick="switchTab('addTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap">
@@ -48,7 +48,7 @@
       <div class="bg-blue-600 text-white p-5 rounded-2xl shadow-sm mb-6 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold">Mục tiêu hôm nay (30 từ mới)</h2>
-          <p class="text-blue-100 text-sm mt-0.5">Tích chọn "Đã thuộc" sau khi học xong. Từ đã thuộc sẽ được đưa vào phần Ôn tập vào ngày mai.</p>
+          <p class="text-blue-100 text-sm mt-0.5">Tích chọn "Đã thuộc" sau khi học xong. Các từ này sẽ được đưa vào bài Ôn tập trong 3 ngày tiếp theo.</p>
         </div>
         <div class="text-right shrink-0 ml-4">
           <span id="dailyProgressText" class="text-2xl font-extrabold">0/30</span>
@@ -69,12 +69,12 @@
       </div>
     </section>
 
-    <!-- ================= TAB 2: ÔN TẬP TỪ ĐÃ THUỘC HÔM QUA ================= -->
+    <!-- ================= TAB 2: ÔN TẬP TỪ ĐÃ THUỘC 3 NGÀY TRƯỚC ================= -->
     <section id="quizTab" class="tab-content">
       <div id="quizStartView" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
         <div class="text-5xl mb-4">🎯</div>
-        <h2 class="text-2xl font-bold text-slate-800 mb-2">Ôn tập từ đã thuộc</h2>
-        <p class="text-slate-600 mb-2">Hệ thống tự động lọc các từ bạn đã đánh dấu <b>"Đã thuộc" từ ngày hôm qua trở về trước</b> để kiểm tra trí nhớ.</p>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Ôn tập từ vựng (3 ngày trước)</h2>
+        <p class="text-slate-600 mb-2">Hệ thống tự động lấy các từ bạn đã đánh dấu <b>"Đã thuộc" trong vòng 3 ngày trước đó</b> để kiểm tra lại trí nhớ.</p>
         <p class="text-sm text-indigo-600 font-medium mb-6" id="reviewCountNotice">Đang kiểm tra số từ cần ôn...</p>
         
         <button id="startQuizBtn" onclick="startQuiz(this)" class="bg-indigo-600 text-white font-bold text-lg py-3 px-8 rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-transform active:scale-95">
@@ -117,7 +117,7 @@
         <h2 class="text-2xl font-bold text-slate-800 mb-2">Hoàn thành bài ôn tập!</h2>
         <p class="text-slate-600 mb-6">
           Bạn đã nhớ chính xác <span id="finalScore" class="font-bold text-indigo-600 text-xl"></span> từ.<br>
-          <span class="text-sm text-slate-500">(Những từ trả lời sai đã được tự động chuyển lại vào danh sách "Chưa thuộc" để bạn học kỹ hơn).</span>
+          <span class="text-sm text-slate-500">(Những từ trả lời sai đã được tự động chuyển lại vào danh sách "Chưa thuộc" để bạn học lại).</span>
         </p>
         <button onclick="resetQuizView()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-indigo-700">
           Quay lại
@@ -129,7 +129,7 @@
     <section id="addTab" class="tab-content">
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold text-slate-800 mb-2">Thêm từ vựng tự động</h2>
-        <p class="text-slate-500 text-sm mb-6">Chỉ cần nhập từ tiếng Anh, hệ thống sẽ tự tìm phiên âm và nghĩa tiếng Việt.</p>
+        <p class="text-slate-500 text-sm mb-6">Hệ thống sẽ kiểm tra trùng lặp trước khi tự động tìm phiên âm và nghĩa tiếng Việt.</p>
         
         <form id="quickAddForm" onsubmit="handleQuickAdd(event)" class="space-y-4">
           <div>
@@ -143,14 +143,7 @@
           </button>
         </form>
 
-        <div id="quickAddResult" class="mt-6 hidden p-4 rounded-xl bg-green-50 border border-green-100">
-          <p class="text-green-600 text-sm font-bold mb-1">✓ Đã thêm vào kho từ vựng:</p>
-          <div class="flex items-center gap-2">
-            <span id="resWord" class="font-bold text-lg text-slate-800"></span>
-            <span id="resIpa" class="text-slate-500 font-mono text-sm"></span>
-          </div>
-          <p id="resMeaning" class="text-slate-700 mt-1"></p>
-        </div>
+        <div id="quickAddResult" class="mt-6 hidden p-4 rounded-xl bg-green-50 border border-green-100"></div>
       </div>
     </section>
 
@@ -165,7 +158,7 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // =========================================================================
-    // 2. HÀM TIỆN ÍCH NGÀY THÁNG (Theo múi giờ địa phương)
+    // 2. HÀM TIỆN ÍCH NGÀY THÁNG (Mốc hôm nay & 3 ngày trước)
     // =========================================================================
     function getTodayDateString() {
       const now = new Date();
@@ -178,7 +171,14 @@
     function getStartOfTodayISO() {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
-      return now.toISOString(); // Mốc 00:00:00 sáng nay
+      return now.toISOString(); // Mốc 00:00:00 của ngày hôm nay
+    }
+
+    function getStartOfThreeDaysAgoISO() {
+      const date = new Date();
+      date.setDate(date.getDate() - 3);
+      date.setHours(0, 0, 0, 0);
+      return date.toISOString(); // Mốc 00:00:00 của 3 ngày trước
     }
 
     // =========================================================================
@@ -218,7 +218,6 @@
       let savedIds = JSON.parse(localStorage.getItem('smartvocab_daily_ids') || '[]');
 
       try {
-        // Nếu sang ngày mới hoặc bấm nút đổi bộ từ hoặc chưa có danh sách 30 từ hôm nay
         if (forceNew || savedDate !== todayStr || savedIds.length === 0) {
           const { data: unlearnedData, error: fetchErr } = await supabaseClient
             .from('vocabulary')
@@ -228,7 +227,6 @@
 
           if (fetchErr) throw fetchErr;
 
-          // Xáo trộn ngẫu nhiên và bốc ra đúng 30 từ chưa học
           const shuffled = (unlearnedData || []).sort(() => 0.5 - Math.random());
           const selected30 = shuffled.slice(0, 30);
           savedIds = selected30.map(item => item.id);
@@ -237,7 +235,6 @@
           localStorage.setItem('smartvocab_daily_ids', JSON.stringify(savedIds));
           dailyWordsList = selected30;
         } else {
-          // Nếu vẫn trong ngày hôm đó -> Lấy lại đúng 30 từ đã bốc sáng nay để theo dõi tiến độ
           const { data: currentBatchData, error: batchErr } = await supabaseClient
             .from('vocabulary')
             .select('*')
@@ -245,7 +242,6 @@
 
           if (batchErr) throw batchErr;
 
-          // Giữ đúng thứ tự ban đầu và đưa các từ đã tích thuộc xuống dưới
           dailyWordsList = (currentBatchData || []).sort((a, b) => Number(a.learned) - Number(b.learned));
         }
 
@@ -268,7 +264,6 @@
       const list = document.getElementById('wordList');
       list.innerHTML = '';
 
-      // Cập nhật bộ đếm tiến độ trong ngày
       const learnedTodayCount = dailyWordsList.filter(w => w.learned).length;
       document.getElementById('dailyProgressText').innerText = `${learnedTodayCount}/${dailyWordsList.length}`;
 
@@ -310,7 +305,6 @@
       });
     }
 
-    // Khi bấm nút "Đã thuộc": lưu learned = true kèm mốc thời gian learned_at = hiện tại
     async function toggleLearned(id, currentStatus) {
       const newStatus = !currentStatus;
       const updatePayload = {
@@ -344,14 +338,17 @@
     }
 
     // =========================================================================
-    // 5. CHỨC NĂNG ÔN TẬP TỪ ĐÃ THUỘC HÔM QUA (TAB 2)
+    // 5. CHỨC NĂNG ÔN TẬP TỪ ĐÃ THUỘC CỦA 3 NGÀY TRƯỚC ĐÓ (TAB 2)
     // =========================================================================
     let quizWords = [];
     let currentQuizIndex = 0;
     let quizScore = 0;
 
-    // Lấy danh sách các từ: Đã thuộc (learned = true) VÀ thuộc trước 00:00 sáng nay VÀ chưa ôn hôm nay
+    // Lấy các từ: Đã thuộc (learned = true) 
+    // VÀ thời gian thuộc (learned_at) nằm trong khoảng [00:00 của 3 ngày trước -> trước 00:00 sáng nay]
+    // VÀ chưa được ôn trong ngày hôm nay
     async function fetchWordsDueForReview() {
+      const startOfThreeDaysAgo = getStartOfThreeDaysAgoISO();
       const startOfToday = getStartOfTodayISO();
       const todayStr = getTodayDateString();
 
@@ -359,14 +356,15 @@
         .from('vocabulary')
         .select('*')
         .eq('learned', true)
-        .or(`learned_at.lt.${startOfToday},learned_at.is.null`);
+        .gte('learned_at', startOfThreeDaysAgo)
+        .lt('learned_at', startOfToday);
 
       if (error) {
         console.error("Lỗi kiểm tra bài ôn tập:", error);
         return [];
       }
 
-      // Lọc bỏ những từ đã vừa được ôn tập xong trong ngày hôm nay
+      // Lọc bỏ những từ đã ôn xong trong ngày hôm nay
       return (data || []).filter(item => item.last_reviewed_date !== todayStr);
     }
 
@@ -378,10 +376,10 @@
       if (dueWords.length > 0) {
         badge.innerText = dueWords.length;
         badge.classList.remove('hidden');
-        notice.innerText = `Hiện có ${dueWords.length} từ bạn đã học thuộc từ các ngày trước đang chờ ôn lại!`;
+        notice.innerText = `Hiện có ${dueWords.length} từ bạn đã học thuộc trong 3 ngày trước đang chờ ôn lại!`;
       } else {
         badge.classList.add('hidden');
-        notice.innerText = `Hôm nay bạn chưa có từ nào từ hôm qua cần ôn. Những từ bạn tích "Đã thuộc" hôm nay sẽ xuất hiện tại đây vào ngày mai!`;
+        notice.innerText = `Hôm nay chưa có từ nào từ 3 ngày trước cần ôn. Các từ bạn tích "Đã thuộc" hôm nay sẽ xuất hiện tại đây trong 3 ngày tới!`;
       }
     }
 
@@ -393,15 +391,14 @@
       const dueWords = await fetchWordsDueForReview();
 
       if (dueWords.length === 0) {
-        alert("Chưa có từ nào cần ôn tập hôm nay! Hãy tích 'Đã thuộc' các từ ở tab Học 30 từ hôm nay rồi quay lại vào ngày mai nhé.");
+        alert("Hiện chưa có từ nào thuộc trong 3 ngày trước cần ôn tập hôm nay!");
         btn.innerText = "Bắt đầu ôn tập ngay";
         btn.disabled = false;
         return;
       }
 
-      // Xáo trộn và lấy tối đa 30 từ đã học từ hôm trước để ôn
-      const shuffled = dueWords.sort(() => 0.5 - Math.random());
-      quizWords = shuffled.slice(0, 30);
+      // Xáo trộn ngẫu nhiên các từ cần ôn của 3 ngày trước
+      quizWords = dueWords.sort(() => 0.5 - Math.random());
       
       currentQuizIndex = 0;
       quizScore = 0;
@@ -447,10 +444,10 @@
       feedbackEl.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
 
       if (userAnswer === correctWord) {
-        // NẾU ÔN TẬP ĐÚNG: Giữ nguyên đã thuộc và đánh dấu đã ôn hôm nay
+        // ÔN TẬP ĐÚNG: Đánh dấu đã ôn trong ngày hôm nay (sẽ vẫn được ôn tiếp nếu còn nằm trong khung 3 ngày vào ngày mai)
         quizScore++;
         feedbackEl.classList.add('bg-green-100', 'text-green-700');
-        feedbackEl.innerHTML = `✅ Rất tốt! Bạn vẫn nhớ từ <b>${currentWord.word}</b> <span class="font-mono text-sm ml-2">${currentWord.ipa || ''}</span>`;
+        feedbackEl.innerHTML = `✅ Chính xác! <b>${currentWord.word}</b> <span class="font-mono text-sm ml-2">${currentWord.ipa || ''}</span>`;
         speak(currentWord.word);
         
         await supabaseClient
@@ -458,9 +455,9 @@
           .update({ last_reviewed_date: todayStr })
           .eq('id', currentWord.id);
       } else {
-        // NẾU ÔN TẬP SAI: Đưa từ đó quay trở lại danh sách "Chưa thuộc" để học lại
+        // ÔN TẬP SAI: Đưa về danh sách "Chưa thuộc" để học lại
         feedbackEl.classList.add('bg-red-100', 'text-red-700');
-        feedbackEl.innerHTML = `❌ Quên mất rồi! Đáp án là: <b class="text-xl mx-1">${currentWord.word}</b> <span class="font-mono text-sm">${currentWord.ipa || ''}</span><br><span class="text-xs">Từ này đã được chuyển lại vào danh sách Chưa thuộc để bạn học lại.</span>`;
+        feedbackEl.innerHTML = `❌ Sai rồi! Đáp án là: <b class="text-xl mx-1">${currentWord.word}</b> <span class="font-mono text-sm">${currentWord.ipa || ''}</span><br><span class="text-xs">Từ này đã được chuyển lại về trạng thái "Chưa thuộc" để bạn học lại.</span>`;
         speak(currentWord.word);
 
         await supabaseClient
@@ -493,7 +490,7 @@
     }
 
     // =========================================================================
-    // 6. THÊM TỪ NHANH & TỰ ĐỘNG DỊCH (TAB 3)
+    // 6. THÊM TỪ NHANH & KIỂM TRA TRÙNG LẶP (TAB 3)
     // =========================================================================
     async function autoFetchWordDetails(word) {
       let ipa = '';
@@ -521,13 +518,48 @@
       e.preventDefault();
       const inputEl = document.getElementById('quickWordInput');
       const btnEl = document.getElementById('quickAddBtn');
+      const resultBox = document.getElementById('quickAddResult');
       const rawWord = inputEl.value.trim().toLowerCase();
       if (!rawWord) return;
 
       btnEl.disabled = true;
-      btnEl.innerText = 'Đang tra cứu và lưu...';
-      document.getElementById('quickAddResult').classList.add('hidden');
+      btnEl.innerText = 'Đang kiểm tra trong kho...';
+      resultBox.classList.add('hidden');
 
+      // 1. KIỂM TRA TỪ ĐÃ CÓ TRONG DB CHƯA
+      const { data: existingWord, error: checkError } = await supabaseClient
+        .from('vocabulary')
+        .select('word, ipa, meaning, learned')
+        .ilike('word', rawWord)
+        .maybeSingle();
+
+      if (checkError) {
+        alert('Lỗi kiểm tra dữ liệu: ' + checkError.message);
+        btnEl.disabled = false;
+        btnEl.innerText = 'Thêm & Dịch tự động';
+        return;
+      }
+
+      if (existingWord) {
+        resultBox.className = 'mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200';
+        resultBox.innerHTML = `
+          <p class="text-amber-600 text-sm font-bold mb-1">
+            ⚠️ Từ này đã có trong kho (${existingWord.learned ? 'Đã thuộc' : 'Chưa thuộc'}):
+          </p>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-lg text-slate-800">${existingWord.word}</span>
+            <span class="text-slate-500 font-mono text-sm">${existingWord.ipa || ''}</span>
+          </div>
+          <p class="text-slate-700 mt-1 capitalize">${existingWord.meaning || ''}</p>
+        `;
+        btnEl.disabled = false;
+        btnEl.innerText = 'Thêm & Dịch tự động';
+        inputEl.select();
+        return;
+      }
+
+      // 2. TRA CỨU TỰ ĐỘNG & LƯU MỚI
+      btnEl.innerText = 'Đang tra cứu và lưu...';
       const { ipa, meaning } = await autoFetchWordDetails(rawWord);
       const finalMeaning = meaning || "Chưa tìm thấy nghĩa";
 
@@ -538,10 +570,15 @@
       if (error) {
         alert('Lỗi lưu từ: ' + error.message);
       } else {
-        document.getElementById('resWord').innerText = rawWord;
-        document.getElementById('resIpa').innerText = ipa ? ipa : '';
-        document.getElementById('resMeaning').innerText = finalMeaning;
-        document.getElementById('quickAddResult').classList.remove('hidden');
+        resultBox.className = 'mt-6 p-4 rounded-xl bg-green-50 border border-green-100';
+        resultBox.innerHTML = `
+          <p class="text-green-600 text-sm font-bold mb-1">✓ Đã thêm vào kho từ vựng:</p>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-lg text-slate-800">${rawWord}</span>
+            <span class="text-slate-500 font-mono text-sm">${ipa || ''}</span>
+          </div>
+          <p class="text-slate-700 mt-1 capitalize">${finalMeaning}</p>
+        `;
         inputEl.value = '';
       }
 
