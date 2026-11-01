@@ -331,8 +331,36 @@
       loadDailyWords(false);
     }
 
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
+    // =========================================================================
+    // HÀM PHÁT ÂM CHUẨN NGƯỜI BẢN XỨ (DÙNG FILE AUDIO THẬT)
+    // =========================================================================
+    async function speak(word) {
+      try {
+        // 1. Gọi Free Dictionary API để lấy file audio phát âm chuẩn của người bản xứ
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        const data = await res.json();
+        
+        let audioUrl = '';
+        if (data && data[0] && data[0].phonetics) {
+          // Lọc tìm phonetic có chứa đường dẫn audio hợp lệ (.mp3 hoặc .ogg)
+          const validPhonetic = data[0].phonetics.find(p => p.audio && p.audio.trim() !== '');
+          if (validPhonetic) {
+            audioUrl = validPhonetic.audio;
+          }
+        }
+
+        // 2. Nếu tìm thấy file audio bản xứ -> Phát trực tiếp âm thanh chuẩn
+        if (audioUrl) {
+          const audio = new Audio(audioUrl);
+          audio.play();
+          return;
+        }
+      } catch (e) {
+        console.log("Không tải được file audio, chuyển sang giọng đọc dự phòng...");
+      }
+
+      // 3. Fallback: Nếu từ không có file audio, dùng giọng tổng hợp của trình duyệt
+      const utterance = new SpeechSynthesisUtterance(word);
       utterance.lang = 'en-US';
       window.speechSynthesis.speak(utterance);
     }
