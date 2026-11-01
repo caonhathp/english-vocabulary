@@ -8,7 +8,6 @@
   <!-- Thư viện Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    /* CSS ẩn hiện các tab */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
   </style>
@@ -28,30 +27,105 @@
       </div>
       <!-- Tabs -->
       <nav class="flex gap-4 py-2 overflow-x-auto">
-        <button onclick="switchTab('listTab', this)" class="tab-btn active text-blue-600 font-semibold border-b-2 border-blue-600 pb-2 px-2 whitespace-nowrap">Danh sách từ</button>
-        <button onclick="switchTab('addTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap">Thêm từ nhanh</button>
-        <button onclick="switchTab('quizTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap">Ôn tập hằng ngày</button>
+        <button onclick="switchTab('listTab', this)" class="tab-btn active text-blue-600 font-semibold border-b-2 border-blue-600 pb-2 px-2 whitespace-nowrap">
+          Học 30 từ hôm nay
+        </button>
+        <button onclick="switchTab('quizTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap flex items-center gap-1.5">
+          Ôn tập từ hôm qua
+          <span id="reviewBadge" class="hidden bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button onclick="switchTab('addTab', this)" class="tab-btn text-slate-500 font-medium hover:text-blue-500 pb-2 px-2 whitespace-nowrap">
+          Thêm từ nhanh
+        </button>
       </nav>
     </div>
   </header>
 
   <main class="max-w-3xl mx-auto p-4 mt-4">
     
-    <!-- ================= TAB 1: DANH SÁCH TỪ ================= -->
+    <!-- ================= TAB 1: 30 TỪ CẦN HỌC HÔM NAY ================= -->
     <section id="listTab" class="tab-content active">
+      <div class="bg-blue-600 text-white p-5 rounded-2xl shadow-sm mb-6 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold">Mục tiêu hôm nay (30 từ mới)</h2>
+          <p class="text-blue-100 text-sm mt-0.5">Tích chọn "Đã thuộc" sau khi học xong. Từ đã thuộc sẽ được đưa vào phần Ôn tập vào ngày mai.</p>
+        </div>
+        <div class="text-right shrink-0 ml-4">
+          <span id="dailyProgressText" class="text-2xl font-extrabold">0/30</span>
+          <p class="text-xs text-blue-200 uppercase tracking-wider">Đã thuộc</p>
+        </div>
+      </div>
+
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg font-bold text-slate-700">Từ vựng gần đây</h2>
-        <button onclick="fetchWords()" class="bg-white border shadow-sm px-3 py-1.5 rounded-lg text-sm hover:bg-slate-50">🔄 Làm mới</button>
+        <h3 class="text-base font-bold text-slate-700">Danh sách 30 từ trong ngày</h3>
+        <div class="flex gap-2">
+          <button onclick="forceNewDailyBatch()" class="bg-white border shadow-sm px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50" title="Đổi 30 từ khác">🔀 Đổi bộ 30 từ mới</button>
+          <button onclick="loadDailyWords()" class="bg-white border shadow-sm px-3 py-1.5 rounded-lg text-sm hover:bg-slate-50">🔄 Làm mới</button>
+        </div>
       </div>
+
       <div id="wordList" class="space-y-3">
-        <!-- Danh sách từ render ở đây -->
-      </div>
-      <div class="text-center mt-6">
-        <button onclick="loadMore()" class="text-blue-600 hover:underline text-sm font-medium">Tải thêm từ cũ hơn...</button>
+        <!-- 30 từ render ở đây -->
       </div>
     </section>
 
-    <!-- ================= TAB 2: THÊM TỪ NHANH ================= -->
+    <!-- ================= TAB 2: ÔN TẬP TỪ ĐÃ THUỘC HÔM QUA ================= -->
+    <section id="quizTab" class="tab-content">
+      <div id="quizStartView" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
+        <div class="text-5xl mb-4">🎯</div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Ôn tập từ đã thuộc</h2>
+        <p class="text-slate-600 mb-2">Hệ thống tự động lọc các từ bạn đã đánh dấu <b>"Đã thuộc" từ ngày hôm qua trở về trước</b> để kiểm tra trí nhớ.</p>
+        <p class="text-sm text-indigo-600 font-medium mb-6" id="reviewCountNotice">Đang kiểm tra số từ cần ôn...</p>
+        
+        <button id="startQuizBtn" onclick="startQuiz(this)" class="bg-indigo-600 text-white font-bold text-lg py-3 px-8 rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-transform active:scale-95">
+          Bắt đầu ôn tập ngay
+        </button>
+      </div>
+
+      <!-- Khung làm bài -->
+      <div id="quizPlayView" class="hidden">
+        <div class="flex justify-between items-center mb-4 px-2">
+          <span class="text-slate-500 font-medium">Tiến độ: <span id="quizProgress" class="text-indigo-600 font-bold">1/30</span></span>
+          <span class="text-slate-500 font-medium">Đúng: <span id="quizScore" class="text-green-600 font-bold">0</span></span>
+        </div>
+
+        <div class="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-200 text-center relative">
+          <p class="text-sm text-slate-400 uppercase tracking-wider mb-2 font-bold">Nghĩa tiếng Việt</p>
+          <h3 id="quizMeaning" class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 capitalize leading-tight"></h3>
+          
+          <form onsubmit="checkQuizAnswer(event)" class="max-w-xs mx-auto">
+            <input type="text" id="quizInput" autocomplete="off"
+              class="w-full text-center text-xl font-bold border-b-2 border-slate-300 py-2 mb-6 focus:border-indigo-500 focus:outline-none bg-transparent" 
+              placeholder="Gõ lại từ tiếng Anh...">
+            <button type="submit" id="quizSubmitBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700">
+              Kiểm tra đáp án
+            </button>
+          </form>
+
+          <!-- Phản hồi đúng/sai -->
+          <div id="quizFeedback" class="hidden mt-6 p-4 rounded-xl font-medium text-lg"></div>
+          
+          <button id="quizNextBtn" onclick="nextQuizWord()" class="hidden w-full max-w-xs mx-auto mt-4 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">
+            Từ tiếp theo ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- Khung kết quả cuối cùng -->
+      <div id="quizEndView" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
+        <div class="text-5xl mb-4">🏆</div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Hoàn thành bài ôn tập!</h2>
+        <p class="text-slate-600 mb-6">
+          Bạn đã nhớ chính xác <span id="finalScore" class="font-bold text-indigo-600 text-xl"></span> từ.<br>
+          <span class="text-sm text-slate-500">(Những từ trả lời sai đã được tự động chuyển lại vào danh sách "Chưa thuộc" để bạn học kỹ hơn).</span>
+        </p>
+        <button onclick="resetQuizView()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-indigo-700">
+          Quay lại
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: THÊM TỪ NHANH ================= -->
     <section id="addTab" class="tab-content">
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold text-slate-800 mb-2">Thêm từ vựng tự động</h2>
@@ -69,9 +143,8 @@
           </button>
         </form>
 
-        <!-- Khung kết quả hiển thị sau khi thêm -->
         <div id="quickAddResult" class="mt-6 hidden p-4 rounded-xl bg-green-50 border border-green-100">
-          <p class="text-green-600 text-sm font-bold mb-1">✓ Đã thêm thành công:</p>
+          <p class="text-green-600 text-sm font-bold mb-1">✓ Đã thêm vào kho từ vựng:</p>
           <div class="flex items-center gap-2">
             <span id="resWord" class="font-bold text-lg text-slate-800"></span>
             <span id="resIpa" class="text-slate-500 font-mono text-sm"></span>
@@ -81,72 +154,37 @@
       </div>
     </section>
 
-    <!-- ================= TAB 3: ÔN TẬP HẰNG NGÀY ================= -->
-    <section id="quizTab" class="tab-content">
-      <div id="quizStartView" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
-        <div class="text-5xl mb-4">🎯</div>
-        <h2 class="text-2xl font-bold text-slate-800 mb-2">Ôn tập hằng ngày</h2>
-        <p class="text-slate-600 mb-6">Hệ thống sẽ lấy ngẫu nhiên 30 từ bạn chưa thuộc. Hãy xem nghĩa và gõ lại từ tiếng Anh chính xác nhé!</p>
-        <button onclick="startQuiz()" class="bg-indigo-600 text-white font-bold text-lg py-3 px-8 rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-transform active:scale-95">
-          Bắt đầu ôn 30 từ
-        </button>
-      </div>
-
-      <!-- Khung làm bài -->
-      <div id="quizPlayView" class="hidden">
-        <div class="flex justify-between items-center mb-4 px-2">
-          <span class="text-slate-500 font-medium">Tiến độ: <span id="quizProgress" class="text-indigo-600 font-bold">1/30</span></span>
-          <span class="text-slate-500 font-medium">Điểm: <span id="quizScore" class="text-green-600 font-bold">0</span></span>
-        </div>
-
-        <div class="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-200 text-center relative">
-          <p class="text-sm text-slate-400 uppercase tracking-wider mb-2 font-bold">Nghĩa của từ</p>
-          <h3 id="quizMeaning" class="text-2xl md:text-3xl font-bold text-slate-800 mb-6 capitalize leading-tight"></h3>
-          
-          <form onsubmit="checkQuizAnswer(event)" class="max-w-xs mx-auto">
-            <input type="text" id="quizInput" autocomplete="off"
-              class="w-full text-center text-xl font-bold border-b-2 border-slate-300 py-2 mb-6 focus:border-indigo-500 focus:outline-none bg-transparent" 
-              placeholder="Gõ từ tiếng Anh vào đây...">
-            <button type="submit" id="quizSubmitBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700">
-              Kiểm tra
-            </button>
-          </form>
-
-          <!-- Phản hồi đúng/sai -->
-          <div id="quizFeedback" class="hidden mt-6 p-3 rounded-lg font-medium text-lg"></div>
-          
-          <button id="quizNextBtn" onclick="nextQuizWord()" class="hidden w-full max-w-xs mx-auto mt-4 bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900">
-            Tiếp tục ➔
-          </button>
-        </div>
-      </div>
-
-      <!-- Khung kết quả cuối cùng -->
-      <div id="quizEndView" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
-        <div class="text-5xl mb-4">🏆</div>
-        <h2 class="text-2xl font-bold text-slate-800 mb-2">Hoàn thành xuất sắc!</h2>
-        <p class="text-slate-600 mb-6">Bạn đã đúng <span id="finalScore" class="font-bold text-indigo-600 text-xl"></span> từ. Các từ này đã được đánh dấu là "Đã thuộc".</p>
-        <button onclick="resetQuizView()" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl hover:bg-indigo-700">
-          Về màn hình chính
-        </button>
-      </div>
-    </section>
-
   </main>
 
   <script>
     // =========================================================================
-    // 1. CẤU HÌNH SUPABASE (Hãy thay thế URL và KEY bằng thông tin của bạn)
+    // 1. CẤU HÌNH SUPABASE
     // =========================================================================
     const SUPABASE_URL = 'https://xiwbkvgviuqonaekgdba.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_WbBGxhI5dbi1DCZXuyQUyg_2M030d2X';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_ANON_KEY = 'sb_publishable_WbBGxhI5dbi1DCZXuyQUyg_2M030d2X'; // Thay bằng anon key eyJ... của bạn
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // =========================================================================
-    // 2. STATE VÀ LOGIC GIAO DIỆN
+    // 2. HÀM TIỆN ÍCH NGÀY THÁNG (Theo múi giờ địa phương)
     // =========================================================================
-    let wordsList = [];
-    let currentLimit = 50;
+    function getTodayDateString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`; // Định dạng YYYY-MM-DD
+    }
+
+    function getStartOfTodayISO() {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      return now.toISOString(); // Mốc 00:00:00 sáng nay
+    }
+
+    // =========================================================================
+    // 3. QUẢN LÝ GIAO DIỆN & TABS
+    // =========================================================================
+    let dailyWordsList = [];
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -158,7 +196,8 @@
       btnElement.classList.remove('text-slate-500');
       btnElement.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'active');
 
-      if(tabId === 'listTab' && wordsList.length === 0) fetchWords();
+      if (tabId === 'listTab') loadDailyWords();
+      if (tabId === 'quizTab') checkReviewCount();
     }
 
     function setStatus(text, type = 'normal') {
@@ -170,144 +209,132 @@
     }
 
     // =========================================================================
-    // 3. API DỊCH TỰ ĐỘNG (Dùng Google Translate Public Endpoint)
+    // 4. LOGIC 30 TỪ MỖI NGÀY (TAB 1)
     // =========================================================================
-    async function autoFetchWordDetails(word) {
-      let ipa = '';
-      let meaning = '';
+    async function loadDailyWords(forceNew = false) {
+      setStatus('Đang tải 30 từ...');
+      const todayStr = getTodayDateString();
+      const savedDate = localStorage.getItem('smartvocab_daily_date');
+      let savedIds = JSON.parse(localStorage.getItem('smartvocab_daily_ids') || '[]');
 
-      // Lấy phiên âm
       try {
-        const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        const dictData = await dictRes.json();
-        if (dictData && dictData[0]) {
-          ipa = dictData[0].phonetic || (dictData[0].phonetics.find(p => p.text) || {}).text || '';
+        // Nếu sang ngày mới hoặc bấm nút đổi bộ từ hoặc chưa có danh sách 30 từ hôm nay
+        if (forceNew || savedDate !== todayStr || savedIds.length === 0) {
+          const { data: unlearnedData, error: fetchErr } = await supabaseClient
+            .from('vocabulary')
+            .select('*')
+            .eq('learned', false)
+            .limit(200);
+
+          if (fetchErr) throw fetchErr;
+
+          // Xáo trộn ngẫu nhiên và bốc ra đúng 30 từ chưa học
+          const shuffled = (unlearnedData || []).sort(() => 0.5 - Math.random());
+          const selected30 = shuffled.slice(0, 30);
+          savedIds = selected30.map(item => item.id);
+
+          localStorage.setItem('smartvocab_daily_date', todayStr);
+          localStorage.setItem('smartvocab_daily_ids', JSON.stringify(savedIds));
+          dailyWordsList = selected30;
+        } else {
+          // Nếu vẫn trong ngày hôm đó -> Lấy lại đúng 30 từ đã bốc sáng nay để theo dõi tiến độ
+          const { data: currentBatchData, error: batchErr } = await supabaseClient
+            .from('vocabulary')
+            .select('*')
+            .in('id', savedIds);
+
+          if (batchErr) throw batchErr;
+
+          // Giữ đúng thứ tự ban đầu và đưa các từ đã tích thuộc xuống dưới
+          dailyWordsList = (currentBatchData || []).sort((a, b) => Number(a.learned) - Number(b.learned));
         }
-      } catch (e) { console.log("Lỗi lấy IPA", e); }
 
-      // Lấy nghĩa bằng Google Translate API (Public)
-      try {
-        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(word)}`);
-        const transData = await transRes.json();
-        if (transData && transData[0] && transData[0][0]) {
-          meaning = transData[0][0][0].toLowerCase();
-        }
-      } catch (e) { console.log("Lỗi lấy nghĩa", e); }
-
-      return { ipa, meaning };
-    }
-
-    // =========================================================================
-    // 4. CHỨC NĂNG THÊM TỪ NHANH
-    // =========================================================================
-    async function handleQuickAdd(e) {
-      e.preventDefault();
-      const inputEl = document.getElementById('quickWordInput');
-      const btnEl = document.getElementById('quickAddBtn');
-      const rawWord = inputEl.value.trim().toLowerCase();
-      
-      if (!rawWord) return;
-
-      btnEl.disabled = true;
-      btnEl.innerText = 'Đang tra cứu và lưu...';
-      document.getElementById('quickAddResult').classList.add('hidden');
-
-      // Tự động tìm IPA và Nghĩa
-      const { ipa, meaning } = await autoFetchWordDetails(rawWord);
-      const finalMeaning = meaning || "Chưa tìm thấy nghĩa";
-
-      // Lưu vào Supabase
-      const { error } = await supabase
-        .from('vocabulary')
-        .insert([{ word: rawWord, ipa: ipa, meaning: finalMeaning, learned: false }]);
-
-      if (error) {
-        alert('Lỗi lưu từ: ' + error.message);
-      } else {
-        // Hiển thị kết quả thành công
-        document.getElementById('resWord').innerText = rawWord;
-        document.getElementById('resIpa').innerText = ipa ? ipa : '';
-        document.getElementById('resMeaning').innerText = finalMeaning;
-        document.getElementById('quickAddResult').classList.remove('hidden');
-        inputEl.value = ''; // clear input
-        fetchWords(); // update danh sách ngầm
+        renderDailyWordList();
+        checkReviewCount();
+        setStatus('Đã đồng bộ', 'success');
+      } catch (err) {
+        console.error('Lỗi tải từ vựng:', err);
+        setStatus('Lỗi: ' + err.message, 'error');
       }
-
-      btnEl.disabled = false;
-      btnEl.innerText = 'Thêm & Dịch tự động';
-      inputEl.focus();
     }
 
-    // =========================================================================
-    // 5. CHỨC NĂNG DANH SÁCH TỪ
-    // =========================================================================
-    async function fetchWords() {
-      setStatus('Đang tải...');
-      const { data, error } = await supabase
-        .from('vocabulary')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(currentLimit);
-
-      if (error) {
-        setStatus('Lỗi tải dữ liệu', 'error');
-        return;
+    function forceNewDailyBatch() {
+      if (confirm('Bạn muốn lấy một bộ 30 từ chưa thuộc khác cho hôm nay?')) {
+        loadDailyWords(true);
       }
-      wordsList = data || [];
-      renderWordList();
-      setStatus('Đã đồng bộ', 'success');
     }
 
-    function loadMore() {
-      currentLimit += 50;
-      fetchWords();
-    }
-
-    function renderWordList() {
+    function renderDailyWordList() {
       const list = document.getElementById('wordList');
       list.innerHTML = '';
 
-      if (wordsList.length === 0) {
-        list.innerHTML = '<p class="text-center text-slate-400 py-6">Chưa có từ vựng nào.</p>';
+      // Cập nhật bộ đếm tiến độ trong ngày
+      const learnedTodayCount = dailyWordsList.filter(w => w.learned).length;
+      document.getElementById('dailyProgressText').innerText = `${learnedTodayCount}/${dailyWordsList.length}`;
+
+      if (dailyWordsList.length === 0) {
+        list.innerHTML = '<p class="text-center text-slate-400 py-8">Kho từ vựng chưa có từ mới nào. Hãy thêm từ ở tab "Thêm từ nhanh"!</p>';
         return;
       }
 
-      wordsList.forEach((item, index) => {
+      dailyWordsList.forEach((item, index) => {
         const card = document.createElement('div');
         card.className = `p-4 rounded-xl border flex items-center justify-between transition ${
-          item.learned ? 'bg-slate-50 border-slate-200 opacity-70' : 'bg-white border-slate-200 shadow-sm'
+          item.learned ? 'bg-green-50/60 border-green-200 opacity-75' : 'bg-white border-slate-200 shadow-sm'
         }`;
+
+        const safeWord = item.word.replace(/'/g, "\\'");
 
         card.innerHTML = `
           <div class="flex-1 min-w-0 pr-4">
             <div class="flex items-baseline gap-2 mb-1 truncate">
-              <span class="font-bold text-lg ${item.learned ? 'line-through text-slate-500' : 'text-blue-800'}">${item.word}</span>
+              <span class="text-xs font-bold text-slate-400 mr-1">#${index + 1}</span>
+              <span class="font-bold text-lg ${item.learned ? 'line-through text-green-700' : 'text-blue-800'}">${item.word}</span>
               <span class="text-sm text-slate-400 font-mono">${item.ipa || ''}</span>
+              ${item.level ? `<span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-medium">${item.level}</span>` : ''}
             </div>
             <p class="text-slate-600 text-sm truncate capitalize">${item.meaning}</p>
           </div>
-          <div class="flex items-center gap-4 shrink-0">
-            <button onclick="speak('${item.word}')" class="bg-blue-50 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-blue-100">🔊</button>
-            <label class="flex items-center gap-1.5 cursor-pointer text-sm font-medium ${item.learned ? 'text-green-600' : 'text-slate-400'}">
-              <input type="checkbox" ${item.learned ? 'checked' : ''} onchange="toggleLearned(${item.id}, ${item.learned})" class="w-4 h-4 rounded text-blue-600">
-              Thuộc
+          <div class="flex items-center gap-3 shrink-0">
+            <button onclick="speak('${safeWord}')" class="bg-blue-50 text-blue-600 rounded-full w-9 h-9 flex items-center justify-center hover:bg-blue-100" title="Nghe phát âm">🔊</button>
+            <label class="flex items-center gap-1.5 cursor-pointer text-sm font-semibold px-3 py-1.5 rounded-lg border ${
+              item.learned ? 'bg-green-600 text-white border-green-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+            }">
+              <input type="checkbox" ${item.learned ? 'checked' : ''} onchange="toggleLearned(${item.id}, ${item.learned})" class="hidden">
+              ${item.learned ? '✓ Đã thuộc' : 'Chưa thuộc'}
             </label>
-            <button onclick="deleteWord(${item.id})" class="text-slate-300 hover:text-red-500">✖</button>
+            <button onclick="deleteWord(${item.id})" class="text-slate-300 hover:text-red-500 px-1" title="Xóa từ">✖</button>
           </div>
         `;
         list.appendChild(card);
       });
     }
 
+    // Khi bấm nút "Đã thuộc": lưu learned = true kèm mốc thời gian learned_at = hiện tại
     async function toggleLearned(id, currentStatus) {
-      await supabase.from('vocabulary').update({ learned: !currentStatus }).eq('id', id);
-      fetchWords();
+      const newStatus = !currentStatus;
+      const updatePayload = {
+        learned: newStatus,
+        learned_at: newStatus ? new Date().toISOString() : null
+      };
+
+      const { error } = await supabaseClient
+        .from('vocabulary')
+        .update(updatePayload)
+        .eq('id', id);
+
+      if (error) {
+        alert("Lỗi cập nhật: Hãy chắc chắn bạn đã chạy lệnh ALTER TABLE thêm cột learned_at trên Supabase!\nChi tiết: " + error.message);
+        return;
+      }
+
+      loadDailyWords(false);
     }
 
     async function deleteWord(id) {
-      if (!confirm('Xóa từ vựng này?')) return;
-      await supabase.from('vocabulary').delete().eq('id', id);
-      fetchWords();
+      if (!confirm('Xóa từ vựng này khỏi hệ thống?')) return;
+      await supabaseClient.from('vocabulary').delete().eq('id', id);
+      loadDailyWords(false);
     }
 
     function speak(text) {
@@ -317,53 +344,74 @@
     }
 
     // =========================================================================
-    // 6. CHỨC NĂNG ÔN TẬP HẰNG NGÀY (QUIZ)
+    // 5. CHỨC NĂNG ÔN TẬP TỪ ĐÃ THUỘC HÔM QUA (TAB 2)
     // =========================================================================
     let quizWords = [];
     let currentQuizIndex = 0;
     let quizScore = 0;
 
-    async function startQuiz() {
-      // Ẩn view bắt đầu, tải dữ liệu
-      const btn = event.target;
-      btn.innerText = "Đang tải dữ liệu...";
-      btn.disabled = true;
+    // Lấy danh sách các từ: Đã thuộc (learned = true) VÀ thuộc trước 00:00 sáng nay VÀ chưa ôn hôm nay
+    async function fetchWordsDueForReview() {
+      const startOfToday = getStartOfTodayISO();
+      const todayStr = getTodayDateString();
 
-      // Lấy danh sách 150 từ CHƯA THUỘC ngẫu nhiên hoặc cũ nhất
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('vocabulary')
         .select('*')
-        .eq('learned', false)
-        .limit(150);
+        .eq('learned', true)
+        .or(`learned_at.lt.${startOfToday},learned_at.is.null`);
 
       if (error) {
-        alert("Lỗi tải bài ôn tập!");
-        btn.innerText = "Bắt đầu ôn 30 từ";
+        console.error("Lỗi kiểm tra bài ôn tập:", error);
+        return [];
+      }
+
+      // Lọc bỏ những từ đã vừa được ôn tập xong trong ngày hôm nay
+      return (data || []).filter(item => item.last_reviewed_date !== todayStr);
+    }
+
+    async function checkReviewCount() {
+      const dueWords = await fetchWordsDueForReview();
+      const badge = document.getElementById('reviewBadge');
+      const notice = document.getElementById('reviewCountNotice');
+
+      if (dueWords.length > 0) {
+        badge.innerText = dueWords.length;
+        badge.classList.remove('hidden');
+        notice.innerText = `Hiện có ${dueWords.length} từ bạn đã học thuộc từ các ngày trước đang chờ ôn lại!`;
+      } else {
+        badge.classList.add('hidden');
+        notice.innerText = `Hôm nay bạn chưa có từ nào từ hôm qua cần ôn. Những từ bạn tích "Đã thuộc" hôm nay sẽ xuất hiện tại đây vào ngày mai!`;
+      }
+    }
+
+    async function startQuiz(btnEl) {
+      const btn = btnEl || document.getElementById('startQuizBtn');
+      btn.innerText = "Đang chuẩn bị bài ôn...";
+      btn.disabled = true;
+
+      const dueWords = await fetchWordsDueForReview();
+
+      if (dueWords.length === 0) {
+        alert("Chưa có từ nào cần ôn tập hôm nay! Hãy tích 'Đã thuộc' các từ ở tab Học 30 từ hôm nay rồi quay lại vào ngày mai nhé.");
+        btn.innerText = "Bắt đầu ôn tập ngay";
         btn.disabled = false;
         return;
       }
 
-      if (!data || data.length === 0) {
-        alert("Tuyệt vời! Bạn không còn từ nào chưa thuộc trong Database.");
-        btn.innerText = "Bắt đầu ôn 30 từ";
-        btn.disabled = false;
-        return;
-      }
-
-      // Xáo trộn ngẫu nhiên và lấy đúng 30 từ
-      const shuffled = data.sort(() => 0.5 - Math.random());
+      // Xáo trộn và lấy tối đa 30 từ đã học từ hôm trước để ôn
+      const shuffled = dueWords.sort(() => 0.5 - Math.random());
       quizWords = shuffled.slice(0, 30);
       
       currentQuizIndex = 0;
       quizScore = 0;
 
-      // Chuyển view
       document.getElementById('quizStartView').classList.add('hidden');
       document.getElementById('quizPlayView').classList.remove('hidden');
       
       loadQuizWord();
       
-      btn.innerText = "Bắt đầu ôn 30 từ";
+      btn.innerText = "Bắt đầu ôn tập ngay";
       btn.disabled = false;
     }
 
@@ -371,7 +419,6 @@
       const currentWord = quizWords[currentQuizIndex];
       document.getElementById('quizProgress').innerText = `${currentQuizIndex + 1}/${quizWords.length}`;
       document.getElementById('quizScore').innerText = quizScore;
-      
       document.getElementById('quizMeaning').innerText = currentWord.meaning;
       
       const inputEl = document.getElementById('quizInput');
@@ -390,6 +437,7 @@
       const userAnswer = inputEl.value.trim().toLowerCase();
       const currentWord = quizWords[currentQuizIndex];
       const correctWord = currentWord.word.toLowerCase();
+      const todayStr = getTodayDateString();
 
       if (!userAnswer) return;
 
@@ -399,20 +447,26 @@
       feedbackEl.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
 
       if (userAnswer === correctWord) {
-        // Đúng
+        // NẾU ÔN TẬP ĐÚNG: Giữ nguyên đã thuộc và đánh dấu đã ôn hôm nay
         quizScore++;
         feedbackEl.classList.add('bg-green-100', 'text-green-700');
-        feedbackEl.innerHTML = `✅ Chính xác! <b>${currentWord.word}</b> <span class="font-mono text-sm ml-2">${currentWord.ipa || ''}</span>`;
+        feedbackEl.innerHTML = `✅ Rất tốt! Bạn vẫn nhớ từ <b>${currentWord.word}</b> <span class="font-mono text-sm ml-2">${currentWord.ipa || ''}</span>`;
         speak(currentWord.word);
         
-        // Cập nhật Database -> Chuyển thành Đã thuộc
-        await supabase.from('vocabulary').update({ learned: true }).eq('id', currentWord.id);
-        
+        await supabaseClient
+          .from('vocabulary')
+          .update({ last_reviewed_date: todayStr })
+          .eq('id', currentWord.id);
       } else {
-        // Sai
+        // NẾU ÔN TẬP SAI: Đưa từ đó quay trở lại danh sách "Chưa thuộc" để học lại
         feedbackEl.classList.add('bg-red-100', 'text-red-700');
-        feedbackEl.innerHTML = `❌ Sai rồi. Đáp án đúng là: <b class="text-xl mx-1">${currentWord.word}</b> <span class="font-mono text-sm">${currentWord.ipa || ''}</span>`;
+        feedbackEl.innerHTML = `❌ Quên mất rồi! Đáp án là: <b class="text-xl mx-1">${currentWord.word}</b> <span class="font-mono text-sm">${currentWord.ipa || ''}</span><br><span class="text-xs">Từ này đã được chuyển lại vào danh sách Chưa thuộc để bạn học lại.</span>`;
         speak(currentWord.word);
+
+        await supabaseClient
+          .from('vocabulary')
+          .update({ learned: false, learned_at: null, last_reviewed_date: todayStr })
+          .eq('id', currentWord.id);
       }
 
       document.getElementById('quizScore').innerText = quizScore;
@@ -423,11 +477,10 @@
     function nextQuizWord() {
       currentQuizIndex++;
       if (currentQuizIndex >= quizWords.length) {
-        // Kết thúc ôn tập
         document.getElementById('quizPlayView').classList.add('hidden');
         document.getElementById('quizEndView').classList.remove('hidden');
         document.getElementById('finalScore').innerText = `${quizScore}/${quizWords.length}`;
-        fetchWords(); // Cập nhật lại danh sách ở tab chính
+        checkReviewCount();
       } else {
         loadQuizWord();
       }
@@ -436,12 +489,71 @@
     function resetQuizView() {
       document.getElementById('quizEndView').classList.add('hidden');
       document.getElementById('quizStartView').classList.remove('hidden');
+      checkReviewCount();
     }
 
-    // Đưa các hàm ra phạm vi toàn cục (Global Scope) để HTML luôn gọi được
+    // =========================================================================
+    // 6. THÊM TỪ NHANH & TỰ ĐỘNG DỊCH (TAB 3)
+    // =========================================================================
+    async function autoFetchWordDetails(word) {
+      let ipa = '';
+      let meaning = '';
+      try {
+        const dictRes = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        const dictData = await dictRes.json();
+        if (dictData && dictData[0]) {
+          ipa = dictData[0].phonetic || (dictData[0].phonetics.find(p => p.text) || {}).text || '';
+        }
+      } catch (e) {}
+
+      try {
+        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=${encodeURIComponent(word)}`);
+        const transData = await transRes.json();
+        if (transData && transData[0] && transData[0][0]) {
+          meaning = transData[0][0][0].toLowerCase();
+        }
+      } catch (e) {}
+
+      return { ipa, meaning };
+    }
+
+    async function handleQuickAdd(e) {
+      e.preventDefault();
+      const inputEl = document.getElementById('quickWordInput');
+      const btnEl = document.getElementById('quickAddBtn');
+      const rawWord = inputEl.value.trim().toLowerCase();
+      if (!rawWord) return;
+
+      btnEl.disabled = true;
+      btnEl.innerText = 'Đang tra cứu và lưu...';
+      document.getElementById('quickAddResult').classList.add('hidden');
+
+      const { ipa, meaning } = await autoFetchWordDetails(rawWord);
+      const finalMeaning = meaning || "Chưa tìm thấy nghĩa";
+
+      const { error } = await supabaseClient
+        .from('vocabulary')
+        .insert([{ word: rawWord, ipa: ipa, meaning: finalMeaning, learned: false }]);
+
+      if (error) {
+        alert('Lỗi lưu từ: ' + error.message);
+      } else {
+        document.getElementById('resWord').innerText = rawWord;
+        document.getElementById('resIpa').innerText = ipa ? ipa : '';
+        document.getElementById('resMeaning').innerText = finalMeaning;
+        document.getElementById('quickAddResult').classList.remove('hidden');
+        inputEl.value = '';
+      }
+
+      btnEl.disabled = false;
+      btnEl.innerText = 'Thêm & Dịch tự động';
+      inputEl.focus();
+    }
+
+    // Đưa hàm ra Global Scope
     window.switchTab = switchTab;
-    window.fetchWords = fetchWords;
-    window.loadMore = loadMore;
+    window.loadDailyWords = loadDailyWords;
+    window.forceNewDailyBatch = forceNewDailyBatch;
     window.handleQuickAdd = handleQuickAdd;
     window.startQuiz = startQuiz;
     window.checkQuizAnswer = checkQuizAnswer;
@@ -451,10 +563,9 @@
     window.toggleLearned = toggleLearned;
     window.deleteWord = deleteWord;
 
-    // Khởi chạy khi tải trang
-    window.onload = () => {
-      fetchWords();
-    };
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDailyWords();
+    });
   </script>
 </body>
 </html>
