@@ -332,39 +332,38 @@
     }
 
     // =========================================================================
-    // HÀM PHÁT ÂM CHUẨN NGƯỜI BẢN XỨ (DÙNG FILE AUDIO THẬT)
+    // HÀM PHÁT ÂM TỨC THÌ & CHUẨN XÁC (KHÔNG ĐỘ TRỄ)
     // =========================================================================
-    async function speak(word) {
-      try {
-        // 1. Gọi Free Dictionary API để lấy file audio phát âm chuẩn của người bản xứ
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        const data = await res.json();
-        
-        let audioUrl = '';
-        if (data && data[0] && data[0].phonetics) {
-          // Lọc tìm phonetic có chứa đường dẫn audio hợp lệ (.mp3 hoặc .ogg)
-          const validPhonetic = data[0].phonetics.find(p => p.audio && p.audio.trim() !== '');
-          if (validPhonetic) {
-            audioUrl = validPhonetic.audio;
-          }
-        }
-
-        // 2. Nếu tìm thấy file audio bản xứ -> Phát trực tiếp âm thanh chuẩn
-        if (audioUrl) {
-          const audio = new Audio(audioUrl);
-          audio.play();
-          return;
-        }
-      } catch (e) {
-        console.log("Không tải được file audio, chuyển sang giọng đọc dự phòng...");
+    function speak(word) {
+      if (!('speechSynthesis' in window)) {
+        alert("Trình duyệt của bạn không hỗ trợ phát âm!");
+        return;
       }
 
-      // 3. Fallback: Nếu từ không có file audio, dùng giọng tổng hợp của trình duyệt
+      // Hủy mọi âm thanh đang đọc dở để phát ngay từ mới lập tức
+      window.speechSynthesis.cancel();
+
       const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'en-US';
+      utterance.lang = 'en-US'; // Chọn chuẩn Anh - Mỹ
+      utterance.rate = 0.9;     // Tốc độ đọc (0.9 giúp đọc chậm, rõ từng âm tiết hơn)
+      utterance.pitch = 1.0;    // Độ cao giọng đọc tự nhiên
+
+      // Cố gắng tìm giọng đọc bản xứ chất lượng cao nếu trình duyệt có hỗ trợ
+      const voices = window.speechSynthesis.getVoices();
+      const nativeVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Premium')));
+      if (nativeVoice) {
+        utterance.voice = nativeVoice;
+      }
+
       window.speechSynthesis.speak(utterance);
     }
 
+    // Tải trước danh sách giọng đọc của trình duyệt (tránh bị trống ở lần bấm đầu tiên)
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
     // =========================================================================
     // 5. CHỨC NĂNG ÔN TẬP TỪ ĐÃ THUỘC CỦA 3 NGÀY TRƯỚC ĐÓ (TAB 2)
     // =========================================================================
